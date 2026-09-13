@@ -71,9 +71,18 @@ swift test                  # 파싱·포맷 로직 테스트
 
 1. **Developer ID Application 인증서** — Apple Developer 포털에서 발급받아 키체인에 넣는다.
    App Store 용인 `Apple Distribution` 인증서로는 DMG 직접 배포를 서명할 수 없다.
-2. **공증 자격증명** — 앱 암호를 만들어 `aibar` 라는 이름으로 등록해 둔다.
+   **계정 소유자(Account Holder)만 발급할 수 있다.** App Store Connect API 키로 요청하면
+   `403 This operation can only be performed by the Account Holder` 로 거부된다.
+   소유자 Apple ID 로 Xcode → 설정 → Accounts → Manage Certificates → `+` 에서 만든다.
+2. **공증 자격증명** — `aibar` 라는 이름으로 키체인에 등록해 둔다. App Store Connect API 키나
+   앱 암호 중 하나를 쓴다.
 
    ```bash
+   # API 키
+   xcrun notarytool store-credentials aibar \
+     --key AuthKey_XXXXXXXXXX.p8 --key-id <키 ID> --issuer <issuer ID>
+
+   # 또는 앱 암호
    xcrun notarytool store-credentials aibar \
      --apple-id <Apple ID> --team-id <팀 ID> --password <앱 암호>
    ```

@@ -35,6 +35,21 @@ hdiutil create \
 
 rm -rf "$STAGING"
 
+IDENTITY="$(security find-identity -v -p codesigning 2>/dev/null \
+    | grep 'Developer ID Application' | head -1 | sed -E 's/.*"(.*)"/\1/' || true)"
+
+if [ -z "$IDENTITY" ]; then
+    echo "==> Developer ID 인증서가 없어 서명·공증을 건너뜀"
+    echo "    받는 쪽에서 Gatekeeper 경고를 한 번 넘겨야 합니다. README 의 설치 방법을 함께 안내하세요."
+    echo
+    echo "완료: $DMG"
+    du -h "$DMG" | sed 's/^/    /'
+    exit 0
+fi
+
+echo "==> DMG 서명: $IDENTITY"
+codesign --force --timestamp --sign "$IDENTITY" "$DMG"
+
 # 공증 프로필이 등록돼 있으면 공증까지 한다.
 # 등록: xcrun notarytool store-credentials aibar --apple-id <ID> --team-id <TEAM> --password <앱암호>
 if xcrun notarytool history --keychain-profile aibar >/dev/null 2>&1; then
