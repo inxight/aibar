@@ -22,20 +22,14 @@ Claude 와 Codex 의 사용량을 macOS 메뉴바 한 줄로 보여주는 앱.
 
 ## 설치
 
-`AIBar-*.dmg` 를 열고 `AIBar.app` 을 `Applications` 로 끌어다 놓는다. 실행하면 메뉴바에만 뜬다
-(Dock 에는 나타나지 않는다).
+[Releases](https://github.com/inxight/aibar/releases/latest) 에서 `AIBar-*.dmg` 를 받아 열고
+`AIBar.app` 을 `Applications` 로 끌어다 놓는다. 실행하면 메뉴바에만 뜬다 (Dock 에는 나타나지 않는다).
 
-**처음 열 때 «확인되지 않은 개발자» 또는 «손상되었기 때문에 열 수 없습니다» 가 나온다.**
-Apple 공증을 받지 않은 앱이라 그렇다. 다음 중 하나로 넘긴다.
+0.1.1 부터 Developer ID 서명과 Apple 공증을 거쳐 경고 없이 열린다.
 
-- **시스템 설정 → 개인정보 보호 및 보안** 으로 가면 아래쪽에 «AIBar 을(를) 열도록 허용» 버튼이 있다. 누르고 다시 연다.
-- 또는 터미널에서 격리 표시를 지운다.
-
-  ```bash
-  xattr -dr com.apple.quarantine /Applications/AIBar.app
-  ```
-
-한 번 허용하면 그 뒤로는 그냥 열린다.
+0.1.0 은 공증 전 버전이라 처음 열 때 «확인되지 않은 개발자» 경고가 난다. 그 버전을 쓴다면
+**시스템 설정 → 개인정보 보호 및 보안** 의 «AIBar 을(를) 열도록 허용» 을 누르거나
+`xattr -dr com.apple.quarantine /Applications/AIBar.app` 으로 넘긴다.
 
 ## 요구사항
 
