@@ -46,7 +46,11 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BINARY" "$APP/Contents/MacOS/AIBar"
 cp "$ROOT/Resources/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
 
-VERSION="$(git -C "$ROOT" describe --tags --always 2>/dev/null || echo "0.1.0")"
+# Info.plist 버전은 숫자만 허용되므로 태그의 v 를 떼고, 빌드 번호는 커밋 수로 쓴다.
+# (git describe 결과를 그대로 넣으면 v0.1.0-1-g982f72f 같은 값이 앱 정보에 찍힌다)
+TAG="$(git -C "$ROOT" describe --tags --abbrev=0 2>/dev/null || echo "v0.1.0")"
+SHORT_VERSION="${TAG#v}"
+BUILD_NUMBER="$(git -C "$ROOT" rev-list --count HEAD 2>/dev/null || echo 1)"
 
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -64,9 +68,9 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleShortVersionString</key>
-    <string>$VERSION</string>
+    <string>$SHORT_VERSION</string>
     <key>CFBundleVersion</key>
-    <string>$VERSION</string>
+    <string>$BUILD_NUMBER</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>LSMinimumSystemVersion</key>
