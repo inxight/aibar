@@ -122,7 +122,7 @@ final class ClaudeCredentialParsingTests: XCTestCase {
         let credentials = try XCTUnwrap(ClaudeCredentialStore.parse(root: root, source: .keychain))
 
         XCTAssertEqual(credentials.accessToken, "token-value")
-        XCTAssertEqual(credentials.refreshToken, "refresh-value")
+        XCTAssertEqual(credentials.expiresAtMilliseconds, 1789336157946)
         XCTAssertEqual(credentials.subscriptionType, "max")
         XCTAssertEqual(credentials.source, .keychain)
     }
@@ -134,29 +134,62 @@ final class ClaudeCredentialParsingTests: XCTestCase {
         XCTAssertNil(ClaudeCredentialStore.parse(root: root, source: .file))
     }
 
-    func testNeedsRefreshWhenExpiryIsNear() {
+    func testExpiredOnlyAfterExpiryTime() {
         let now = Date()
+        let past = ClaudeCredentials(
+            accessToken: "t",
+            expiresAtMilliseconds: (now.timeIntervalSince1970 - 1) * 1000,
+            subscriptionType: nil, source: .keychain
+        )
+        XCTAssertTrue(past.isExpired(now: now))
+
+        // 갱신을 하지 않으므로 만료 직전이라도 아직 유효하면 그대로 쓴다.
         let soon = ClaudeCredentials(
-            accessToken: "t", refreshToken: nil,
+            accessToken: "t",
             expiresAtMilliseconds: (now.timeIntervalSince1970 + 60) * 1000,
             subscriptionType: nil, source: .keychain
         )
-        XCTAssertTrue(soon.needsRefresh(now: now))
-
-        let later = ClaudeCredentials(
-            accessToken: "t", refreshToken: nil,
-            expiresAtMilliseconds: (now.timeIntervalSince1970 + 3600) * 1000,
-            subscriptionType: nil, source: .keychain
-        )
-        XCTAssertFalse(later.needsRefresh(now: now))
+        XCTAssertFalse(soon.isExpired(now: now))
     }
 
-    func testNeedsRefreshWhenExpiryUnknown() {
-        let credentials = ClaudeCredentials(
-            accessToken: "t", refreshToken: nil, expiresAtMilliseconds: nil,
-            subscriptionType: nil, source: .keychain
+    /// 만료된 토큰이면 서버에 보내지 않고, 갱신도 하지 않고, 파일도 건드리지 않아야 한다.
+    func testExpiredTokenIsNeitherSentNorRewritten() async throws {
+        let home = FileManager.default.temporaryDirectory
+            .appendingPathComponent("aibar-test-\(UUID().uuidString)")
+        let file = home.appendingPathComponent(".claude/.credentials.json")
+        try FileManager.default.createDirectory(
+            at: file.deletingLastPathComponent(), withIntermediateDirectories: true
         )
-        XCTAssertTrue(credentials.needsRefresh())
+        defer { try? FileManager.default.removeItem(at: home) }
+
+        let expiredAt = (Date().timeIntervalSince1970 - 3600) * 1000
+        let original = Data("""
+        {"claudeAiOauth":{"accessToken":"expired-token","refreshToken":"refresh-token","expiresAt":\(expiredAt)}}
+        """.utf8)
+        try original.write(to: file)
+
+        // 요청이 나가면 바로 드러나도록 모든 네트워크를 막은 세션을 쓴다.
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [RejectAllRequests.self]
+        let client = ClaudeClient(
+            store: ClaudeCredentialStore(homeDirectory: home, environment: [:]),
+            session: URLSession(configuration: configuration)
+        )
+
+        let result = await client.fetch()
+
+        XCTAssertNil(result.value)
+        XCTAssertEqual(result.errorMessage, UsageError.sessionExpired.errorDescription)
+        XCTAssertFalse(RejectAllRequests.wasCalled, "만료된 토큰으로 요청이 나갔다")
+        XCTAssertEqual(try Data(contentsOf: file), original, "자격증명 파일이 바뀌었다")
+    }
+
+    func testUnknownExpiryIsTriedAnyway() {
+        let credentials = ClaudeCredentials(
+            accessToken: "t", expiresAtMilliseconds: nil,
+            subscriptionType: nil, source: .environment
+        )
+        XCTAssertFalse(credentials.isExpired())
     }
 }
 
@@ -238,6 +271,21 @@ final class BrandPathTests: XCTestCase {
             }
         }
     }
+}
+
+/// 모든 요청을 가로채 실패시키고, 호출됐는지만 기록한다.
+final class RejectAllRequests: URLProtocol {
+    nonisolated(unsafe) static var wasCalled = false
+
+    override class func canInit(with request: URLRequest) -> Bool { true }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+
+    override func startLoading() {
+        Self.wasCalled = true
+        client?.urlProtocol(self, didFailWithError: URLError(.notConnectedToInternet))
+    }
+
+    override func stopLoading() {}
 }
 
 private extension BrandPathElement {

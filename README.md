@@ -92,14 +92,25 @@ spctl -a -vv /Volumes/AIBar/AIBar.app
 별도 로그인이나 API 키가 필요 없다. 이미 기기에 있는 CLI 인증을 그대로 쓴다.
 
 **Claude** — `~/.claude/.credentials.json` → Keychain(`Claude Code-credentials`) → 환경변수
-`CLAUDE_CODE_OAUTH_TOKEN` 순서로 OAuth 토큰을 찾아 `GET https://api.anthropic.com/api/oauth/usage`
-를 호출한다. 토큰이 만료됐으면 갱신한 뒤 원래 자리에 되돌려 놓는다 (Claude Code 본체와 저장소를
-공유하므로 갱신 결과를 적어두지 않으면 서로 만료된 토큰을 주고받게 된다).
+`CLAUDE_CODE_OAUTH_TOKEN` 순서로 Claude Code 의 OAuth 토큰을 **읽어** `GET https://api.anthropic.com/api/oauth/usage`
+를 호출한다. 토큰을 갱신하거나 다시 저장하지 않는다. 토큰이 만료되면 메뉴바에 `토큰 만료` 가 뜨고,
+Claude Code 를 한 번 실행하면 Claude Code 가 갱신한 토큰을 다음 조회 때 그대로 읽는다.
 
 **Codex** — `codex -s read-only -a untrusted app-server` 를 띄우고 JSON-RPC 로
 `account/rateLimits/read` 를 부른다. 읽기 전용·미신뢰 모드라 이 앱이 파일을 건드리지 않는다.
 
 값은 전부 이 기기에서 제공자에게 직접 간다. 중계 서버도, 수집도 없다.
+
+### Claude 쪽 사용 전에 알아둘 것
+
+Anthropic 문서([Legal and compliance](https://code.claude.com/docs/en/legal-and-compliance))는
+구독(Free·Pro·Max) OAuth 인증을 Claude Code 와 Anthropic 자체 앱에서만 쓰도록 하고, 제3자 도구가
+Claude 세션 토큰을 수집·저장·중계하는 것을 허용하지 않는다고 적고 있다. 사전 통지 없이 조치할 수
+있다는 문구도 있다.
+
+이 앱은 토큰을 사용량 조회에만 쓰고 저장·갱신·외부 전송을 하지 않지만, **토큰을 읽어 쓰는 것
+자체가 위 문구에 해당할 수 있다.** 해당 기능이 막히거나 계정에 조치가 들어올 가능성은 사용자 본인이
+판단해야 한다. Codex 쪽은 이 고지와 관계없이 동작한다.
 
 ## 구현에서 주의한 곳
 
@@ -123,7 +134,12 @@ python3 scripts/svg2swift.py Resources/logos/claude.svg Resources/logos/openai.s
   > Sources/AIBar/BrandPaths.swift
 ```
 
-## 라이선스
+## 라이선스와 상표
 
-MIT. 로고는 [simple-icons](https://github.com/simple-icons/simple-icons) (CC0) 의 SVG 를
-위 방식으로 변환해 넣었다.
+소스 코드는 [MIT](LICENSE) 로 배포한다.
+
+Claude 는 Anthropic PBC, OpenAI 와 Codex 는 OpenAI 의 상표다. 로고 SVG 데이터는
+[simple-icons](https://github.com/simple-icons/simple-icons) 에서 가져왔는데, 그 CC0 표시는 파일에 대한
+것이지 **상표를 써도 된다는 허락이 아니다.** MIT 라이선스도 상표에는 적용되지 않는다.
+
+이 프로젝트는 Anthropic·OpenAI 와 관계가 없으며, 두 회사가 만들거나 승인·후원한 것이 아니다.

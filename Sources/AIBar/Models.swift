@@ -80,7 +80,7 @@ enum UsageError: Error, LocalizedError, Equatable {
         case .credentialsUnreadable(let detail):
             return "로그인 정보를 읽지 못했습니다: \(detail)"
         case .sessionExpired:
-            return "세션이 만료되었습니다. 다시 로그인하세요."
+            return "토큰이 만료되었습니다. Claude Code 를 한 번 실행하면 갱신됩니다."
         case .authenticationFailed:
             return "인증에 실패했습니다."
         case .httpStatus(let code):

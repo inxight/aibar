@@ -133,7 +133,10 @@ final class StatusItemController {
 
     /// 메뉴바에는 짧게만 적고 자세한 내용은 팝오버에서 보여준다.
     private func shortError(_ message: String) -> String {
-        if message.contains("로그인") || message.contains("인증") || message.contains("세션") {
+        if message.contains("만료") {
+            return "토큰 만료"
+        }
+        if message.contains("로그인") || message.contains("인증") {
             return "로그인 필요"
         }
         if message.contains("찾을 수 없") {
