@@ -3,7 +3,8 @@ import Foundation
 /// Codex 사용량 조회.
 ///
 /// Codex 는 HTTP 엔드포인트 대신 `codex app-server` 를 띄워 JSON-RPC 로 물어본다.
-/// 읽기 전용·미신뢰 모드로 실행해 이 앱이 파일을 건드리지 않게 한다.
+/// 읽기 전용 샌드박스·승인 없음(`never`)으로 실행해 이 앱이 파일을 건드리지 않게 한다.
+/// codex 0.156 부터 `-a untrusted` 가 없어져 `never` 를 쓴다.
 struct CodexClient: Sendable {
     /// 7일 창의 길이(분). 응답의 `windowDurationMins` 와 맞춰 쓴다.
     static let weeklyWindowMinutes = 10080
@@ -37,7 +38,7 @@ struct CodexClient: Sendable {
         let stdin = Pipe()
         let stdout = Pipe()
         process.executableURL = URL(fileURLWithPath: executable)
-        process.arguments = ["-s", "read-only", "-a", "untrusted", "app-server"]
+        process.arguments = ["-s", "read-only", "-a", "never", "app-server"]
         process.standardInput = stdin
         process.standardOutput = stdout
         process.standardError = FileHandle.nullDevice
